@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Location Map - Multiple Ways to Get Location</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 10px;
+            background-color: #1a1a1a;
+            color: white;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #2d2d2d;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.5);
+        }
+        #map {
+            height: 350px;
+            width: 100%;
+            margin: 15px 0;
+            border-radius: 8px;
+        }
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin: 15px 0;
+        }
+        button {
+            padding: 12px 20px;
+            font-size: 14px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            flex: 1;
+            min-width: 120px;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+        .btn-success {
+            background-color: #28a745;
+            color: white;
+        }
+        .btn-success:hover {
+            background-color: #1e7e34;
+        }
+        .btn-warning {
+            background-color: #ffc107;
+            color: #212529;
+        }
+        .btn-warning:hover {
+            background-color: #e0a800;
+        }
+        button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+        input[type="text"], input[type="number"] {
+            padding: 10px;
+            border: 1px solid #555;
+            border-radius: 5px;
+            background-color: #3d3d3d;
+            color: white;
+            flex: 1;
+            min-width: 100px;
+        }
+        input::placeholder {
+            color: #aaa;
+        }
+        #location-info {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+            background-color: #3d3d3d;
+        }
+        .error {
+            color: #ff6b6b;
+            background-color: #4d2d2d;
+            border-left-color: #ff6b6b;
+        }
+        .success {
+            color: #51cf66;
+            background-color: #2d4d2d;
+            border-left-color: #51cf66;
+        }
+        .warning {
+            color: #ffd43b;
+            background-color: #4d4d2d;
+            border-left-color: #ffd43b;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #3d3d3d;
+            border-radius: 8px;
+        }
+        .section h3 {
+            margin-top: 0;
+            color: #ffd43b;
+        }
+        .quick-locations {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .location-card {
+            background-color: #2d2d2d;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            border: 1px solid #555;
+            transition: all 0.3s;
+        }
+        .location-card:hover {
+            background-color: #4d4d4d;
+            border-color: #007bff;
+        }
+        .current-location {
+            font-size: 12px;
+            color: #aaa;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>📍 Universal Location Map</h2>
+        
+        <div class="section">
+            <h3>🎯 Method 1: Auto-Detect Location</h3>
+            <div class="btn-group">
+                <button class="btn-primary" id="autoLocationBtn" onclick="getAutoLocation()">
+                    📡 Get My Location
+                </button>
+                <button class="btn-warning" onclick="requestLocationPermission()">
+                    🔓 Enable Location Access
+                </button>
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>📝 Method 2: Enter Coordinates Manually</h3>
+            <div class="input-group">
+                <input type="number" id="latInput" placeholder="Latitude (e.g., 7.2906)" step="any">
+                <input type="number" id="lngInput" placeholder="Longitude (e.g., 80.6337)" step="any">
+                <button class="btn-success" onclick="showManualLocation()">📍 Show Location</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>🔍 Method 3: Search by Address/Place</h3>
+            <div class="input-group">
+                <input type="text" id="addressInput" placeholder="Enter city, address, or place name">
+                <button class="btn-success" onclick="searchLocation()">🔍 Search</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>⚡ Method 4: Quick Locations (Sri Lanka)</h3>
+            <div class="quick-locations">
+                <div class="location-card" onclick="goToLocation(6.9271, 79.8612, 'Colombo')">
+                    🏙️ <strong>Colombo</strong><br>
+                    <small>Commercial Capital</small>
+                </div>
+                <div class="location-card" onclick="goToLocation(7.2906, 80.6337, 'Kandy')">
+                    🏛️ <strong>Kandy</strong><br>
+                    <small>Cultural Capital</small>
+                </div>
+                <div class="location-card" onclick="goToLocation(6.0535, 80.2210, 'Galle')">
+                    🏰 <strong>Galle</strong><br>
+                    <small>Southern Province</small>
+                </div>
+                <div class="location-card" onclick="goToLocation(8.5874, 81.2152, 'Trincomalee')">
+                    🏖️ <strong>Trincomalee</strong><br>
+                    <small>Eastern Province</small>
+                </div>
+                <div class="location-card" onclick="goToLocation(7.9403, 81.0188, 'Anurādhapura')">
+                    🏺 <strong>Anuradhapura</strong><br>
+                    <small>Ancient Capital</small>
+                </div>
+                <div class="location-card" onclick="goToLocation(7.3779, 80.7718, 'Negombo')">
+                    🎣 <strong>Negombo</strong><br>
+                    <small>Fishing Town</small>
+                </div>
+            </div>
+        </div>
+
+        <div id="map"></div>
+        <div id="location-info">Choose any method above to show your location on the map!</div>
+        
+        <div class="current-location">
+            <div id="current-coords">No location selected</div>
+        </div>
+    </div>
+    
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+        // Create map with default Sri Lanka view
+        var map = L.map('map').setView([7.8731, 80.7718], 8);
+        
+        // Add OpenStreetMap tiles
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+        
+        var marker;
+        var locationInfo = document.getElementById('location-info');
+        var autoLocationBtn = document.getElementById('autoLocationBtn');
+        
+        // Method 1: Auto-detect location
+        function getAutoLocation() {
+            if (!navigator.geolocation) {
+                showError('❌ Geolocation not supported by your browser');
+                return;
+            }
+            
+            autoLocationBtn.disabled = true;
+            autoLocationBtn.textContent = '🔍 Getting Location...';
+            locationInfo.innerHTML = '<div class="warning">📡 Requesting your location...</div>';
+            
+            navigator.geolocation.getCurrentPosition(
+                showPosition, 
+                handleLocationError, 
+                {
+                    enableHighAccuracy: true,
+                    timeout: 15000,
+                    maximumAge: 300000
+                }
+            );
+        }
+        
+        function requestLocationPermission() {
+            if ('permissions' in navigator) {
+                navigator.permissions.query({ name: 'geolocation' }).then(function(result) {
+                    if (result.state === 'denied') {
+                        showError(`
+                            🔒 <strong>Location Permission Blocked</strong><br>
+                            Please manually enable location access:<br>
+                            1. Click the 🔒 or 📍 icon in your address bar<br>
+                            2. Select "Allow" for location<br>
+                            3. Refresh the page<br><br>
+                            Or use the manual input methods below!
+                        `);
+                    } else {
+                        getAutoLocation();
+                    }
+                });
+            } else {
+                getAutoLocation();
+            }
+        }
+        
+        function showPosition(position) {
+            var lat = position.coords.latitude;
+            var lon = position.coords.longitude;
+            var accuracy = position.coords.accuracy;
+            
+            showLocationOnMap(lat, lon, 'Your Current Location', accuracy);
+            getReverseGeocode(lat, lon);
+            
+            autoLocationBtn.disabled = false;
+            autoLocationBtn.textContent = '📡 Get My Location';
+        }
+        
+        function handleLocationError(error) {
+            autoLocationBtn.disabled = false;
+            autoLocationBtn.textContent = '📡 Get My Location';
+            
+            let errorMessage = '❌ <strong>Auto-location failed</strong><br>';
+            
+            switch(error.code) {
+                case error.PERMISSION_DENIED:
+                    errorMessage += 'Location access denied. Use manual input methods below!';
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    errorMessage += 'Location unavailable. Try manual input or search!';
+                    break;
+                case error.TIMEOUT:
+                    errorMessage += 'Location timeout. Try again or use manual methods!';
+                    break;
+                default:
+                    errorMessage += 'Unknown error. Use alternative methods below!';
+                    break;
+            }
+            
+            showError(errorMessage);
+        }
+        
+        // Method 2: Manual coordinates
+        function showManualLocation() {
+            var lat = parseFloat(document.getElementById('latInput').value);
+            var lng = parseFloat(document.getElementById('lngInput').value);
+            
+            if (isNaN(lat) || isNaN(lng)) {
+                showError('❌ Please enter valid latitude and longitude values');
+                return;
+            }
+            
+            if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+                showError('❌ Invalid coordinates. Lat: -90 to 90, Lng: -180 to 180');
+                return;
+            }
+            
+            showLocationOnMap(lat, lng, 'Manual Location');
+            getReverseGeocode(lat, lng);
+        }
+        
+        // Method 3: Search by address
+        function searchLocation() {
+            var address = document.getElementById('addressInput').value.trim();
+            
+            if (!address) {
+                showError('❌ Please enter an address or place name');
+                return;
+            }
+            
+            locationInfo.innerHTML = '<div class="warning">🔍 Searching for location...</div>';
+            
+            // Using Nominatim geocoding API
+            fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data && data.length > 0) {
+                        var lat = parseFloat(data[0].lat);
+                        var lng = parseFloat(data[0].lon);
+                        var displayName = data[0].display_name;
+                        
+                        showLocationOnMap(lat, lng, displayName);
+                        showSuccess(`✅ Found: ${displayName}`, lat, lng);
+                    } else {
+                        showError('❌ Location not found. Try a different search term.');
+                    }
+                })
+                .catch(error => {
+                    showError('❌ Search failed. Please check your internet connection.');
+                });
+        }
+        
+        // Method 4: Quick locations
+        function goToLocation(lat, lng, name) {
+            showLocationOnMap(lat, lng, name);
+            getReverseGeocode(lat, lng);
+        }
+        
+        // Helper functions
+        function showLocationOnMap(lat, lng, title, accuracy) {
+            map.setView([lat, lng], 15);
+            
+            if (marker) {
+                map.removeLayer(marker);
+            }
+            
+            marker = L.marker([lat, lng]).addTo(map)
+                .bindPopup(`📍 ${title}${accuracy ? `<br>Accuracy: ±${Math.round(accuracy)}m` : ''}`).openPopup();
+            
+            if (accuracy) {
+                L.circle([lat, lng], {
+                    radius: accuracy,
+                    fillColor: '#007bff',
+                    fillOpacity: 0.1,
+                    color: '#007bff',
+                    weight: 2
+                }).addTo(map);
+            }
+            
+            updateCurrentCoords(lat, lng);
+        }
+        
+        function getReverseGeocode(lat, lng) {
+            fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&addressdetails=1`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data && data.display_name) {
+                        showSuccess(`📍 <strong>Location:</strong> ${data.display_name}`, lat, lng);
+                    } else {
+                        showSuccess(`📍 <strong>Coordinates:</strong> ${lat.toFixed(6)}, ${lng.toFixed(6)}`, lat, lng);
+                    }
+                })
+                .catch(error => {
+                    showSuccess(`📍 <strong>Coordinates:</strong> ${lat.toFixed(6)}, ${lng.toFixed(6)}`, lat, lng);
+                });
+        }
+        
+        function showSuccess(message, lat, lng) {
+            locationInfo.innerHTML = `<div class="success">${message}</div>`;
+            if (lat && lng) updateCurrentCoords(lat, lng);
+        }
+        
+        function showError(message) {
+            locationInfo.innerHTML = `<div class="error">${message}</div>`;
+        }
+        
+        function updateCurrentCoords(lat, lng) {
+            document.getElementById('current-coords').textContent = 
+                `Current: ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+        }
+        
+        // Allow Enter key in input fields
+        document.getElementById('addressInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') searchLocation();
+        });
+        
+        document.getElementById('latInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') showManualLocation();
+        });
+        
+        document.getElementById('lngInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') showManualLocation();
+        });
+    </script>
+</body>
+</html>
